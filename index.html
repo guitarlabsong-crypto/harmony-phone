@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Song Young-Min Guitar Lab - Educator Edition</title>
+    <title>Song Young-Min Guitar Lab - Pro Edition</title>
     <style>
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         body { 
@@ -15,18 +15,18 @@
         /* 상단 바 */
         #top-bar {
             background: #231914; display: flex; justify-content: space-between;
-            align-items: center; padding: 10px 15px; height: 85px;
+            align-items: center; padding: 10px 15px; height: 80px;
             border-bottom: 3px solid #5d4037; z-index: 20;
         }
         .status-item { text-align: center; flex: 1; }
-        .label { font-size: 10px; color: #bcaaa4; display: block; text-transform: uppercase; }
+        .label { font-size: 10px; color: #bcaaa4; display: block; }
         .value { font-size: 18px; color: #ffca28; font-weight: bold; }
-        #nextCanvas { background: rgba(0,0,0,0.5); border-radius: 4px; margin-top: 5px; }
+        #nextCanvas { background: rgba(0,0,0,0.5); border-radius: 4px; }
 
-        .admin-btns { display: flex; flex-direction: column; gap: 5px; }
+        .admin-btns { display: flex; flex-direction: column; gap: 4px; }
         .btn-sm { 
             background: #4e342e; color: #fff; border: 1px solid #8d6e63;
-            border-radius: 4px; padding: 4px 10px; font-size: 12px; font-weight: bold;
+            border-radius: 4px; padding: 5px 12px; font-size: 11px; font-weight: bold;
         }
 
         /* 게임 영역 */
@@ -38,7 +38,7 @@
             background: linear-gradient(rgba(0,0,0,0.8), rgba(0,0,0,0.8)), 
                         url('https://images.unsplash.com/photo-1550985616-10810253b84d?q=80&w=400&auto=format&fit=crop');
             background-size: cover; border: 4px solid #5d4037;
-            max-width: 95%; max-height: 95%; 
+            max-width: 95%; max-height: 98%; 
         }
         
         /* 워터마크 */
@@ -49,35 +49,41 @@
             font-weight: 900; text-align: center; pointer-events: none; z-index: 1;
         }
 
-        /* 코드 이름 알림 (교육용) */
+        /* 화음 알림 */
         #chord-notify {
-            position: absolute; top: 35%; width: 100%; text-align: center;
-            font-size: 32px; font-weight: 900; color: #00e676;
+            position: absolute; top: 30%; width: 100%; text-align: center;
+            font-size: 34px; font-weight: 900; color: #00e676;
             text-shadow: 0 0 15px #000, 2px 2px 0 #000;
             z-index: 50; pointer-events: none; display: none;
-            animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
 
-        @keyframes popIn { 0% { transform: scale(0.5); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
-
         #msg-box {
-            position: absolute; top: 45%; width: 100%; text-align: center;
+            position: absolute; top: 40%; width: 100%; text-align: center;
             font-size: 22px; font-weight: bold; color: #ffca28;
             text-shadow: 2px 2px 4px #000; z-index: 40; pointer-events: none;
         }
 
-        /* 하단 컨트롤러 */
+        /* 하단 컨트롤러 최적화 */
         #controls {
-            background: #231914; display: grid; grid-template-columns: repeat(4, 1fr);
-            gap: 12px; padding: 15px; height: 140px; border-top: 3px solid #5d4037;
+            background: #231914; display: grid; 
+            grid-template-columns: 1fr 1.2fr 1fr 0.8fr; /* 방향키는 크게, 드랍은 작게 */
+            gap: 10px; padding: 15px; height: 130px; border-top: 3px solid #5d4037;
         }
         .btn-ctrl {
             background: #6d4c41; color: #fff; border: none; border-radius: 12px;
-            font-size: 32px; display: flex; justify-content: center; align-items: center;
+            font-size: 34px; display: flex; justify-content: center; align-items: center;
             box-shadow: 0 5px #3e2723;
         }
         .btn-ctrl:active { transform: translateY(3px); box-shadow: 0 2px #3e2723; background: #8d6e63; }
-        .btn-drop { background: #bf360c; font-size: 18px; font-weight: bold; }
+        
+        /* 드랍 버튼 커스텀 */
+        .btn-drop { 
+            background: #bf360c; 
+            font-size: 16px; 
+            font-weight: 900; 
+            border-radius: 12px;
+            box-shadow: 0 5px #5f1b06;
+        }
     </style>
 </head>
 <body>
@@ -85,7 +91,7 @@
 <div id="top-bar">
     <div class="status-item">
         <span class="label">NEXT</span>
-        <canvas id="nextCanvas" width="40" height="40"></canvas>
+        <canvas id="nextCanvas" width="36" height="36"></canvas>
     </div>
     <div class="status-item">
         <span class="label">SCORE</span>
@@ -96,7 +102,7 @@
         <span id="timer" class="value">00:00</span>
     </div>
     <div class="admin-btns">
-        <button class="btn-sm" id="pauseBtn">PAUSE</button>
+        <button class="btn-sm" id="pauseBtn">P/R</button>
         <button class="btn-sm" id="resetBtn">RESET</button>
     </div>
 </div>
@@ -136,7 +142,21 @@
 
     let board = [], score = 0, paused = false, gameOver = false;
     let dropStart = Date.now(), gameStart = null, p = null, nextNote = '';
-    let animatingBlocks = []; // 애니메이션 중인 블럭들 저장
+
+    // 나무 타격음 생성기 (Web Audio)
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    function playWoodSound() {
+        if(audioCtx.state === 'suspended') audioCtx.resume();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'sine'; // 부드러운 타격음
+        osc.frequency.setValueAtTime(180, audioCtx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(60, audioCtx.currentTime + 0.1);
+        gain.gain.setValueAtTime(0.4, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
+        osc.connect(gain); gain.connect(audioCtx.destination);
+        osc.start(); osc.stop(audioCtx.currentTime + 0.1);
+    }
 
     function resize() {
         const availableHeight = document.getElementById('game-container').clientHeight;
@@ -152,7 +172,7 @@
         board = [];
         for(let r=0; r<ROWS; r++) {
             board[r] = [];
-            for(let c=0; c<COLS; c++) board[r][c] = {L:null, f:false, h:false, s:1}; // s: scale
+            for(let c=0; c<COLS; c++) board[r][c] = {L:null, f:false, h:false, s:1};
         }
     }
 
@@ -160,13 +180,10 @@
         ctx.save();
         ctx.translate(x*SQ + SQ/2, y*SQ + SQ/2);
         ctx.scale(scale, scale);
-        
         ctx.fillStyle = h ? "#ffd600" : (L ? (f ? "#2e7d32" : (L==='#'||L==='b' ? "#ffb300" : "#4e342e")) : "rgba(255,255,255,0.05)");
         ctx.fillRect(-SQ/2, -SQ/2, SQ, SQ);
         ctx.strokeStyle = h ? "#fff" : "rgba(255,255,255,0.1)";
-        ctx.lineWidth = h ? 2 : 1;
         ctx.strokeRect(-SQ/2, -SQ/2, SQ, SQ);
-
         if(L) {
             ctx.fillStyle = (L==='#'||L==='b') ? "#000" : "#fff";
             ctx.font = `bold ${SQ*0.6}px Arial`;
@@ -178,9 +195,7 @@
 
     function drawBoard() {
         ctx.clearRect(0,0,canvas.width,canvas.height);
-        for(let r=0; r<ROWS; r++) for(let c=0; c<COLS; c++) {
-            drawSq(c, r, board[r][c].L, board[r][c].f, board[r][c].h, board[r][c].s);
-        }
+        for(let r=0; r<ROWS; r++) for(let c=0; c<COLS; c++) drawSq(c, r, board[r][c].L, board[r][c].f, board[r][c].h, board[r][c].s);
     }
 
     function drawNext() {
@@ -204,7 +219,7 @@
         constructor(L) { this.L = L; this.x = 4; this.y = -1; }
         moveDown() {
             if(!this.collision(0,1)) { this.y++; drawBoard(); drawSq(this.x, this.y, this.L, false, false, 1.1); }
-            else this.lock();
+            else { playWoodSound(); this.lock(); }
         }
         collision(dx, dy) {
             let nx = this.x + dx, ny = this.y + dy;
@@ -215,33 +230,25 @@
         lock() {
             if(this.y < 0) { gameOver=true; showMsg("GAME OVER"); return; }
             board[this.y][this.x] = {L: this.L, f: false, h: false, s: 1};
-            
             if(this.L==='#') { 
-                let count=0; 
-                while(count<8){ 
+                let count=0; while(count<8){ 
                     let rr=Math.floor(Math.random()*ROWS), rc=Math.floor(Math.random()*COLS);
-                    if(!board[rr][rc].L){
-                        board[rr][rc]={L:getRand(false), f:true, h:false, s:1}; // Special False
-                        count++;
-                    }
+                    if(!board[rr][rc].L){ board[rr][rc]={L:getRand(false), f:true, h:false, s:1}; count++; }
                 }
                 showMsg("SHARP! +8 NOTES");
             }
             if(this.L==='b') {
                 for(let r=this.y-1; r<=this.y+1; r++) for(let c=this.x-1; c<=this.x+1; c++)
                     if(r>=0 && r<ROWS && c>=0 && c<COLS) board[r][c]={L:null, f:false, h:false, s:1};
-                showMsg("FLAT! EXPLOSION");
+                showMsg("FLAT! BOOM");
             }
-            check();
-            p = new Piece(nextNote); nextNote = getRand(); drawNext();
+            check(); p = new Piece(nextNote); nextNote = getRand(); drawNext();
         }
     }
 
     async function check() {
-        let found = [];
-        let chordNames = new Set();
+        let found = []; let chordNames = new Set();
         const dirs = [[0,1],[1,0],[1,1],[1,-1]];
-
         for(let r=0; r<ROWS; r++) {
             for(let c=0; c<COLS; c++) {
                 if(!board[r][c].L || board[r][c].L==='#' || board[r][c].L==='b') continue;
@@ -255,38 +262,25 @@
                         let txt = s.map(v=>v.L).sort().join('');
                         let match = CHORDS.find(ch=>ch.k===txt);
                         if(match || (s[0].L===s[1].L && s[1].L===s[2].L)) {
-                            s.forEach(v=>found.push(v));
-                            chordNames.add(match ? match.n : "3-Same!");
+                            s.forEach(v=>found.push(v)); chordNames.add(match ? match.n : "Trio!");
                         }
                     }
                 });
             }
         }
-
         if(found.length>0) {
-            paused = true;
-            // 화음 이름 표시 (1.5초)
-            chordNotify.innerText = Array.from(chordNames).join(", ");
+            paused = true; chordNotify.innerText = Array.from(chordNames).join(", ");
             chordNotify.style.display = "block";
-            
-            // 확대 애니메이션 (1초)
             const startTime = Date.now();
             const animate = () => {
                 const elapsed = Date.now() - startTime;
-                const progress = elapsed / 1000;
-                if(progress < 1) {
-                    found.forEach(v => {
-                        board[v.r][v.c].h = true;
-                        board[v.r][v.c].s = 1 + (progress * 1.5); // 2.5배까지 커짐
-                    });
-                    drawBoard();
-                    requestAnimationFrame(animate);
+                if(elapsed < 1000) {
+                    found.forEach(v => { board[v.r][v.c].h = true; board[v.r][v.c].s = 1 + (elapsed/1000 * 1.5); });
+                    drawBoard(); requestAnimationFrame(animate);
                 } else {
                     found.forEach(v => { board[v.r][v.c]={L:null, f:false, h:false, s:1}; });
-                    chordNotify.style.display = "none";
-                    score += found.length * 10; scoreEl.innerText = score;
-                    gravity(); drawBoard();
-                    paused = false;
+                    chordNotify.style.display = "none"; score += found.length * 10; scoreEl.innerText = score;
+                    gravity(); drawBoard(); paused = false;
                 }
             };
             animate();
@@ -294,15 +288,9 @@
     }
 
     function gravity() {
-        for(let c=0; c<COLS; c++) {
-            for(let r=ROWS-1; r>0; r--) {
-                if(!board[r][c].L) {
-                    for(let k=r-1; k>=0; k--) {
-                        if(board[k][c].L && !board[k][c].f) {
-                            board[r][c]=board[k][c]; board[k][c]={L:null, f:false, h:false, s:1}; break;
-                        }
-                    }
-                }
+        for(let c=0; c<COLS; c++) for(let r=ROWS-1; r>0; r--) if(!board[r][c].L) {
+            for(let k=r-1; k>=0; k--) if(board[k][c].L && !board[k][c].f) {
+                board[r][c]=board[k][c]; board[k][c]={L:null, f:false, h:false, s:1}; break;
             }
         }
     }
@@ -311,16 +299,14 @@
 
     function resetGame() {
         initBoard(); score=0; scoreEl.innerText="0"; gameOver=false; paused=false;
-        gameStart = Date.now();
-        p = new Piece(getRand()); nextNote = getRand();
-        chordNotify.style.display = "none";
-        drawNext(); resize();
+        gameStart = Date.now(); p = new Piece(getRand()); nextNote = getRand();
+        chordNotify.style.display = "none"; drawNext(); resize();
     }
 
     function run() {
         if(!paused && !gameOver) {
             let now = Date.now();
-            if(now - dropStart > 800) { p.moveDown(); dropStart = now; }
+            if(now - dropStart > 850) { p.moveDown(); dropStart = now; }
             let diff = Math.floor((now - gameStart)/1000);
             timeEl.innerText = `${Math.floor(diff/60).toString().padStart(2,'0')}:${(diff%60).toString().padStart(2,'0')}`;
         }
@@ -328,13 +314,14 @@
     }
 
     const btn = (id, fn) => {
-        const el = document.getElementById(id);
-        el.addEventListener('touchstart', (e) => { e.preventDefault(); if(!paused && !gameOver) fn(); });
+        document.getElementById(id).addEventListener('touchstart', (e) => { 
+            e.preventDefault(); if(!paused && !gameOver) fn(); 
+        });
     };
     btn('leftBtn', () => { if(!p.collision(-1,0)) p.x--; drawBoard(); p.draw(); });
     btn('rightBtn', () => { if(!p.collision(1,0)) p.x++; drawBoard(); p.draw(); });
     btn('downBtn', () => p.moveDown());
-    btn('dropBtn', () => { while(!p.collision(0,1)) p.y++; p.lock(); });
+    btn('dropBtn', () => { while(!p.collision(0,1)) p.y++; p.lock(); playWoodSound(); });
     
     document.getElementById('pauseBtn').addEventListener('click', () => { paused = !paused; showMsg(paused?"PAUSE":"RESUME"); });
     document.getElementById('resetBtn').addEventListener('click', () => { if(confirm("리셋할까요?")) resetGame(); });
