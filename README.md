@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Song, Young-Min Guitar Lab - Special Edition</title>
+    <style>
+        body { background-color: #121212; margin: 0; color: #eee; font-family: sans-serif; overflow: hidden; display: flex; flex-direction: column; height: 100vh; touch-action: manipulation; }
+        
+        /* 헤더 스타일 */
+        #header-panel { display: flex; justify-content: space-between; align-items: center; background: #231914; padding: 8px 15px; border-bottom: 2px solid #5d4037; height: 65px; z-index: 10; }
+        .info-group { display: flex; gap: 12px; align-items: center; }
+        .info-box { text-align: center; }
+        .info-label { font-size: 10px; color: #bcaaa4; display: block; }
+        .info-value { font-size: 15px; color: #ffca28; font-weight: bold; }
+        .btn-admin { background: #4e342e; color: #fff; border: 1px solid #8d6e63; border-radius: 8px; padding: 6px 10px; font-size: 11px; font-weight: bold; }
+
+        /* 게임 영역 및 배경 설정 */
+        #game-area { flex: 1; position: relative; display: flex; justify-content: center; align-items: center; background: #1a1a1a; overflow: hidden; }
+        
+        canvas#tetris { 
+            /* 기타 배경 이미지 적용 */
+            background: linear-gradient(rgba(0,0,0,0.8), rgba(0,0,0,0.8)), url('https://images.unsplash.com/photo-1550985616-10810253b84d?q=80&w=400&auto=format&fit=crop'); 
+            background-size: cover;
+            background-position: center;
+            border: 3px solid #4e342e; 
+            max-height: 98%; 
+            max-width: 95%; 
+            display: block;
+            z-index: 2;
+        }
+
+        /* 워터마크 설정 (은은하게 회전된 글자) */
+        #watermark { 
+            position: absolute; 
+            top: 50%; 
+            left: 50%; 
+            transform: translate(-50%, -50%) rotate(-25deg); 
+            font-size: 24px; 
+            color: rgba(255, 255, 255, 0.08); 
+            font-weight: 900; 
+            white-space: nowrap; 
+            pointer-events: none; 
+            text-align: center; 
+            z-index: 3;
+        }
+
+        /* 하단 컨트롤러 */
+        #controls { background: #231914; display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; padding: 15px; height: 130px; border-top: 2px solid #5d4037; z-index: 10; }
+        .btn-move { background: #6d4c41; color: white; border: none; border-radius: 15px; font-size: 28px; display: flex; justify-content: center; align-items: center; box-shadow: 0 4px #3e2723; -webkit-tap-highlight-color: transparent; }
+        .btn-move:active { transform: translateY(2px); box-shadow: 0 2px #3e2723; background: #8d6e63; }
+        .btn-drop { background: #bf360c; font-size: 18px; font-weight: bold; }
+
+        #msg-overlay { position: absolute; top: 35%; width: 100%; text-align: center; pointer-events: none; z-index: 20; }
+        #msg { font-size: 26px; font-weight: bold; color: #ffca28; text-shadow: 2px 2px 5px #000; }
+    </style>
+</head>
+<body>
+
+<div id="header-panel">
+    <div class="info-group">
+        <div class="info-box"><span class="info-label">NEXT</span><canvas id="nextCanvas" width="35" height="35"></canvas></div>
+        <div class="info-box"><span class="info-label">SCORE</span><span id="score" class="info-value">0</span></div>
+        <div class="info-box"><span class="info-label">TIME</span><span id="timer" class="info-value">00:00</span></div>
+    </div>
+    <div style="display:flex; gap:5px;">
+        <button class="btn-admin" onclick="paused = !paused; showMsg(paused?'PAUSED':'RESUME')">P/R</button>
+        <button class="btn-admin" onclick="confirm('Reset?') && resetGame()">RESET</button>
+    </div>
+</div>
+
+<div id="game-area">
+    <div id="watermark">SONG, YOUNG-MIN<br>Guitar Lab</div>
+    <canvas id="tetris"></canvas>
+    <div id="msg-overlay"><div id="msg"></div></div>
+</div>
+
+<div id="controls">
+    <div class="btn-move" id="leftBtn">◀</div>
+    <div class="btn-move" id="downBtn">▼</div>
+    <div class="btn-move" id="rightBtn">▶</div>
+    <div class="btn-move btn-drop" id="hardDropBtn">DROP</div>
+</div>
+
+<script>
+    const canvas = document.getElementById('tetris');
+    const ctx = canvas.getContext('2d');
+    const nextCanvas = document.getElementById('nextCanvas');
+    const nCtx = nextCanvas.getContext('2d');
+    const scoreElement = document.getElementById('score');
+    const timerElement = document.getElementById('timer');
+    const msgElement = document.getElementById('msg');
+
+    const ROW = 18, COL = 10;
+    let SQ = 30;
+    const NOTES = ['C', 'D', 'E', 'F', 'G', 'A', 'B'];
+    const CHORD_DB = [
+        { keys: 'CEG', name: 'C Major' }, { keys: 'ADF', name: 'D minor' },
+        { keys: 'BEG', name: 'E minor' }, { keys: 'ACF', name: 'F Major' },
+        { keys: 'BDG', name: 'G Major' }, { keys: 'ACE', name: 'A minor' },
+        { keys: 'BDF', name: 'B dim' }
+    ];
+
+    let board = [], score = 0, paused = false, gameOver = false, dropInterval = 600, dropStart = Date.now(), gameStartTime = null, timerId = null, p, nextP;
+
+    function resize() { SQ = Math.min(window.innerWidth/(COL+1.5), (window.innerHeight-250)/ROW); canvas.width = COL*SQ; canvas.height = ROW*SQ; drawBoard(); }
+    window.addEventListener('resize', resize); resize();
+
+    function initBoard() { board = Array.from({length: ROW}, () => Array.from({length: COL}, () => ({letter: null, isFloating: false, highlight: false}))); }
+
+    function drawSquare(x, y, cell) {
+        // 배경 투명도 조절하여 이미지 보이게 설정
+        ctx.fillStyle = cell.highlight ? "#ffd600" : (cell.letter ? (cell.isFloating ? "#2e7d32" : (cell.letter==='#'||cell.letter==='b' ? "#ffb300" : "#4e342e")) : "rgba(255,255,255,0.05)");
+        ctx.fillRect(x*SQ, y*SQ, SQ, SQ);
+        ctx.strokeStyle = "rgba(255,255,255,0.1)"; 
+        ctx.strokeRect(x*SQ, y*SQ, SQ, SQ);
+        if(cell.letter) {
+            ctx.fillStyle = (cell.letter==='#'||cell.letter==='b') ? "#000" : "#fff";
+            ctx.font = `bold ${SQ*0.6}px Arial`; ctx.textAlign = "center";
+            ctx.fillText(cell.letter, x*SQ+SQ/2, y*SQ+SQ/2+(SQ*0.2));
+        }
+    }
+
+    function drawBoard() { ctx.clearRect(0,0,canvas.width,canvas.height); for(let r=0; r<ROW; r++) for(let c=0; c<COL; c++) drawSquare(c,r,board[r][c]); }
+
+    function drawNext() {
+        nCtx.clearRect(0,0,35,35); if(!nextP) return;
+        nCtx.fillStyle = (nextP.letter==='#'||nextP.letter==='b') ? "#ffb300" : "#ef6c00";
+        nCtx.fillRect(5,5,25,25); nCtx.fillStyle="#fff"; nCtx.font="bold 14px Arial"; nCtx.textAlign="center"; nCtx.fillText(nextP.letter, 17, 23);
+    }
+
+    function getRandomNote() { 
+        let r = Math.random(); 
+        return { letter: r < 0.08 ? '#' : (r < 0.16 ? 'b' : NOTES[Math.floor(Math.random()*7)]) }; 
+    }
+
+    function activateSharp() {
+        showMsg("SHARP! +8 NOTES");
+        let count = 0;
+        while(count < 8) {
+            let r = Math.floor(Math.random()*ROW), c = Math.floor(Math.random()*COL);
+            if(!board[r][c].letter) { board[r][c] = { letter: NOTES[Math.floor(Math.random()*7)], isFloating: true }; count++; }
+            if(board.flat().every(cell => cell.letter)) break;
+        }
+    }
+
+    function activateFlat(x, y) {
+        showMsg("FLAT! EXPLOSION");
+        for(let dr=-1; dr<=1; dr++) {
+            for(let dc=-1; dc<=1; dc++) {
+                let nr = y+dr, nc = x+dc;
+                if(nr>=0 && nr<ROW && nc>=0 && nc<COL) board[nr][nc] = { letter: null };
+            }
+        }
+    }
+
+    class Piece {
+        constructor(data) { this.letter = data.letter; this.x = Math.floor(COL/2)-1; this.y = -1; }
+        draw() { drawSquare(this.x, this.y, {letter: this.letter}); }
+        moveDown() { 
+            if(gameOver || paused) return; 
+            if(!this.collision(0,1)) { this.y++; drawBoard(); this.draw(); } 
+            else this.lock(); 
+        }
+        moveLeft() { if(!this.collision(-1,0)) { this.x--; drawBoard(); this.draw(); } }
+        moveRight() { if(!this.collision(1,0)) { this.x++; drawBoard(); this.draw(); } }
+        collision(x, y) {
+            let nx = this.x+x, ny = this.y+y;
+            if(nx<0 || nx>=COL || ny>=ROW) return true;
+            if(ny>=0 && board[ny][nx].letter) return true;
+            return false;
+        }
+        lock() {
+            if(this.y < 0) { gameOver = true; showMsg("GAME OVER"); return; }
+            board[this.y][this.x] = { letter: this.letter, isFloating: false };
+            if(this.letter === '#') activateSharp();
+            else if(this.letter === 'b') activateFlat(this.x, this.y);
+            checkAndProcess();
+            if(!gameOver) { p = new Piece(nextP); nextP = getRandomNote(); drawNext(); }
+        }
+    }
+
+    async function checkAndProcess() {
+        let toRemove = new Set();
+        const dirs = [{dx:1,dy:0},{dx:0,dy:1},{dx:1,dy:1},{dx:-1,dy:1}];
+        for(let r=0; r<ROW; r++) {
+            for(let c=0; c<COL; c++) {
+                if(!board[r][c].letter || board[r][c].letter==='#' || board[r][c].letter==='b') continue;
+                dirs.forEach(d => {
+                    let seq = [];
+                    for(let i=0; i<3; i++) {
+                        let nr=r+d.dy*i, nc=c+d.dx*i;
+                        if(nr>=0 && nr<ROW && nc>=0 && nc<COL && board[nr][nc].letter) seq.push({r:nr, c:nc, L:board[nr][nc].letter});
+                    }
+                    if(seq.length===3) {
+                        let s = seq.map(x=>x.L).sort().join('');
+                        if(CHORD_DB.find(v=>v.keys===s) || (seq[0].L===seq[1].L && seq[1].L===seq[2].L)) {
+                            seq.forEach(x => { board[x.r][x.c].highlight=true; toRemove.add(`${x.r},${x.c}`); });
+                        }
+                    }
+                });
+            }
+        }
+        if(toRemove.size > 0) {
+            paused = true; score += toRemove.size * 10; scoreElement.innerText = score; drawBoard();
+            await new Promise(res => setTimeout(res, 400));
+            toRemove.forEach(v => { let [r,c] = v.split(',').map(Number); board[r][c] = {letter:null}; });
+            applyGravity(); drawBoard(); paused = false; checkAndProcess();
+        }
+    }
+
+    function applyGravity() {
+        for(let c=0; c<COL; c++) {
+            for(let r=ROW-1; r>0; r--) {
+                if(!board[r][c].letter) {
+                    for(let kr=r-1; kr>=0; kr--) {
+                        if(board[kr][c].letter && !board[kr][c].isFloating) {
+                            board[r][c] = board[kr][c]; board[kr][c] = {letter:null}; break;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    function showMsg(t) { msgElement.innerText = t; setTimeout(() => {if(msgElement.innerText===t) msgElement.innerText="";}, 2000); }
+    function resetGame() { initBoard(); score=0; scoreElement.innerText="0"; gameOver=false; paused=false; gameStartTime=Date.now(); if(timerId) clearInterval(timerId); timerId=setInterval(() => { let d=Math.floor((Date.now()-gameStartTime)/1000); timerElement.innerText=`${String(Math.floor(d/60)).padStart(2,'0')}:${String(d%60).padStart(2,'0')}`; }, 1000); p=new Piece(getRandomNote()); nextP=getRandomNote(); drawNext(); drawBoard(); }
+    function drop() { if(Date.now()-dropStart > dropInterval && !paused && !gameOver) { p.moveDown(); dropStart=Date.now(); } requestAnimationFrame(drop); }
+
+    const t = (id, f) => document.getElementById(id).addEventListener('touchstart', (e) => { e.preventDefault(); if(!paused) f(); });
+    t('leftBtn', () => p.moveLeft()); t('rightBtn', () => p.moveRight()); t('downBtn', () => p.moveDown()); t('hardDropBtn', () => { while(!p.collision(0,1)) p.y++; p.lock(); });
+
+    resetGame(); drop();
+</script>
+</body>
+</html>
