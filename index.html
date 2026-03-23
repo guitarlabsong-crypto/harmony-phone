@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Song, Young-Min Guitar Lab - Mobile</title>
+    <style>
+        /* 모바일 최적화 스타일 */
+        body { 
+            background-color: #121212; 
+            margin: 0; 
+            color: #eee; 
+            font-family: 'Malgun Gothic', sans-serif; 
+            overflow: hidden; 
+            display: flex; 
+            flex-direction: column; 
+            height: 100vh;
+            touch-action: manipulation; /* 더블탭 확대 방지 */
+        }
+        
+        /* 상단 정보 영역 */
+        #header-panel {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            background: #231914;
+            padding: 10px;
+            border-bottom: 2px solid #5d4037;
+        }
+
+        .info-box { text-align: center; }
+        .info-label { font-size: 12px; color: #bcaaa4; display: block; }
+        .info-value { font-size: 18px; color: #ffca28; font-weight: bold; }
+
+        /* 게임 메인 영역 */
+        #game-area {
+            flex: 1;
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: #1a1a1a;
+            overflow: hidden;
+        }
+
+        canvas#tetris {
+            max-height: 95%;
+            max-width: 95%;
+            border: 4px solid #4e342e;
+            box-shadow: 0 0 20px rgba(0,0,0,0.5);
+        }
+
+        /* 하단 터치 컨트롤 패널 */
+        #controls {
+            background: #231914;
+            padding: 15px;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            grid-template-rows: repeat(2, 1fr);
+            gap: 10px;
+            height: 180px;
+            border-top: 2px solid #5d4037;
+        }
+
+        .btn {
+            background: #6d4c41;
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 24px;
+            font-weight: bold;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 4px #3e2723;
+            active-transform: translateY(2px);
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .btn:active {
+            background: #8d6e63;
+            transform: translateY(2px);
+            box-shadow: 0 2px #3e2723;
+        }
+
+        .btn-reset { background: #4e342e; font-size: 16px; }
+        .btn-drop { background: #bf360c; }
+
+        /* 메시지 오버레이 */
+        #msg-overlay {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            z-index: 100;
+            pointer-events: none;
+        }
+        #msg { font-size: 24px; font-weight: bold; color: #81c784; text-shadow: 2px 2px 4px #000; }
+        
+        #nextCanvas { background: rgba(0,0,0,0.3); border-radius: 5px; margin-top: 5px; }
+    </style>
+</head>
+<body>
+
+<div id="header-panel">
+    <div class="info-box">
+        <span class="info-label">NEXT</span>
+        <canvas id="nextCanvas" width="50" height="50"></canvas>
+    </div>
+    <div class="info-box">
+        <span class="info-label">SCORE</span>
+        <span id="score" class="info-value">0</span>
+    </div>
+    <div class="info-box">
+        <span class="info-label">TIME</span>
+        <span id="timer" class="info-value">00:00</span>
+    </div>
+</div>
+
+<div id="game-area">
+    <canvas id="tetris"></canvas>
+    <div id="msg-overlay"><div id="msg"></div></div>
+</div>
+
+<div id="controls">
+    <div class="btn" id="leftBtn">◀</div>
+    <div class="btn" id="downBtn">▼</div>
+    <div class="btn" id="rightBtn">▶</div>
+    <button class="btn btn-reset" onclick="resetGame()">RESET</button>
+    <div class="btn btn-drop" id="hardDropBtn">DROP</div>
+    <button class="btn btn-reset" onclick="paused = !paused; showMsg(paused?'PAUSE':'RESUME')">P/R</button>
+</div>
+
+<script>
+    const canvas = document.getElementById('tetris');
+    const ctx = canvas.getContext('2d');
+    const nextCanvas = document.getElementById('nextCanvas');
+    const nCtx = nextCanvas.getContext('2d');
+    const scoreElement = document.getElementById('score');
+    const timerElement = document.getElementById('timer');
+    const msgElement = document.getElementById('msg');
+
+    const ROW = 18, COL = 10; // 모바일 가로 비율을 위해 10칸으로 조정
+    const SQ = Math.min(window.innerWidth / (COL + 2), (window.innerHeight - 300) / ROW);
+    
+    canvas.width = COL * SQ;
+    canvas.height = ROW * SQ;
+
+    const VACANT = "rgba(255, 255, 255, 0.05)";
+    const NOTES = ['C', 'D', 'E', 'F', 'G', 'A', 'B'];
+    const CHORD_DB = [
+        { name: 'C Major', keys: 'CEG', score: 100 },
+        { name: 'D minor', keys: 'ADF', score: 50 },
+        { name: 'E minor', keys: 'BEG', score: 50 },
+        { name: 'F Major', keys: 'ACF', score: 100 },
+        { name: 'G Major', keys: 'BDG', score: 100 },
+        { name: 'A minor', keys: 'ACE', score: 50 },
+        { name: 'B dim',   keys: 'BDF', score: 50 }
+    ];
+
+    let board = [];
+    let score = 0;
+    let paused = false;
+    let gameOver = false;
+    let dropInterval = 500; 
+    let dropStart = Date.now();
+    let gameStartTime = null;
+    let timerId = null;
+    let p, nextP;
+
+    function initBoard() {
+        board = [];
+        for(let r = 0; r < ROW; r++){
+            board[r] = [];
+            for(let c = 0; c < COL; c++) board[r][c] = { letter: null, color: VACANT, highlight: false, isFloating: false, scale: 1 };
+        }
+    }
+
+    function drawNext() {
+        nCtx.clearRect(0, 0, nextCanvas.width, nextCanvas.height);
+        if(!nextP) return;
+        const letter = nextP.letter;
+        const color = (letter === '#' || letter === 'b') ? "#ffb300" : "#ef6c00";
+        nCtx.fillStyle = color;
+        nCtx.fillRect(10, 10, 30, 30);
+        nCtx.fillStyle = (letter === '#' || letter === 'b') ? "#000" : "#fff";
+        nCtx.font = "bold 18px Arial";
+        nCtx.textAlign = "center";
+        nCtx.fillText(letter, 25, 31);
+    }
+
+    function drawSquare(x, y, cell) {
+        const { letter, color, highlight, scale } = cell;
+        ctx.fillStyle = highlight ? "#ffd600" : color;
+        ctx.fillRect(x*SQ, y*SQ, SQ, SQ);
+        ctx.strokeStyle = "rgba(255,255,255,0.1)";
+        ctx.strokeRect(x*SQ, y*SQ, SQ, SQ);
+        if(letter) {
+            ctx.fillStyle = (letter === '#' || letter === 'b') ? "#000" : (highlight ? "#000" : "#fff");
+            const fontSize = (SQ * 0.6) * (scale || 1);
+            ctx.font = `bold ${fontSize}px Arial`;
+            ctx.textAlign = "center";
+            ctx.fillText(letter, x*SQ + SQ/2, y*SQ + SQ/2 + (fontSize/3));
+        }
+    }
+
+    function drawBoard(){
+        ctx.clearRect(0,0, canvas.width, canvas.height);
+        for(let r = 0; r < ROW; r++){
+            for(let c = 0; c < COL; c++) drawSquare(c, r, board[r][c]);
+        }
+    }
+
+    function getRandomNote() {
+        const rand = Math.random();
+        let letter = rand < 0.08 ? '#' : (rand < 0.16 ? 'b' : NOTES[Math.floor(Math.random() * NOTES.length)]);
+        return { letter };
+    }
+
+    class Piece {
+        constructor(data) {
+            this.letter = data.letter;
+            this.x = Math.floor(COL/2) - 1;
+            this.y = -1;
+        }
+        draw() { drawSquare(this.x, this.y, { letter: this.letter, color: "#ef6c00" }); }
+        moveDown() {
+            if(gameOver || paused) return;
+            if(!this.collision(0, 1)){ this.y++; drawBoard(); this.draw(); } 
+            else { this.lock(); }
+        }
+        moveLeft() { if(!this.collision(-1, 0)) { this.x--; drawBoard(); this.draw(); } }
+        moveRight() { if(!this.collision(1, 0)) { this.x++; drawBoard(); this.draw(); } }
+        collision(x, y) {
+            let nX = this.x + x, nY = this.y + y;
+            if(nX < 0 || nX >= COL || nY >= ROW) return true;
+            if(nY >= 0 && board[nY][nX].letter !== null) return true;
+            return false;
+        }
+        lock() {
+            if(this.y < 0) { gameOver = true; showMsg("GAME OVER"); return; }
+            board[this.y][this.x] = { letter: this.letter, color: "#4e342e", highlight: false, isFloating: false, scale: 1 };
+            checkAndProcess();
+            if(!gameOver) { p = new Piece(nextP); nextP = getRandomNote(); drawNext(); }
+        }
+    }
+
+    async function checkAndProcess() {
+        let toRemove = new Set();
+        let currentScore = 0;
+        const checkDirs = [{dx:1, dy:0}, {dx:0, dy:1}, {dx:1, dy:1}, {dx:-1, dy:1}];
+        
+        for(let r=0; r<ROW; r++) {
+            for(let c=0; c<COL; c++) {
+                if(!board[r][c].letter) continue;
+                checkDirs.forEach(dir => {
+                    let seq = [];
+                    for(let i=0; i<3; i++) {
+                        let nr = r + dir.dy*i, nc = c + dir.dx*i;
+                        if(nr>=0 && nr<ROW && nc>=0 && nc<COL && board[nr][nc].letter) seq.push({r: nr, c: nc, L: board[nr][nc].letter});
+                    }
+                    if(seq.length === 3) {
+                        let sorted = seq.map(s => s.L).sort().join('');
+                        let match = CHORD_DB.find(rule => rule.keys === sorted);
+                        if(match || (seq[0].L === seq[1].L && seq[1].L === seq[2].L)) {
+                            seq.forEach(s => { board[s.r][s.c].highlight = true; toRemove.add(`${s.r},${s.c}`); });
+                            currentScore += 100;
+                        }
+                    }
+                });
+            }
+        }
+
+        if(toRemove.size > 0) {
+            paused = true;
+            score += currentScore;
+            scoreElement.innerText = score;
+            await new Promise(r => setTimeout(r, 500));
+            toRemove.forEach(pos => { let [pr, pc] = pos.split(',').map(Number); board[pr][pc] = { letter: null, color: VACANT }; });
+            applyGravity();
+            drawBoard();
+            paused = false;
+            checkAndProcess();
+        }
+    }
+
+    function applyGravity() {
+        for(let c=0; c<COL; c++) {
+            for(let r=ROW-1; r>0; r--) {
+                if(board[r][c].letter === null) {
+                    for(let kr=r-1; kr>=0; kr--) {
+                        if(board[kr][c].letter !== null) {
+                            board[r][c] = board[kr][c];
+                            board[kr][c] = { letter: null, color: VACANT };
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    function updateTimer() {
+        if(paused || gameOver) return;
+        const diff = Math.floor((Date.now() - gameStartTime) / 1000);
+        const m = String(Math.floor(diff / 60)).padStart(2, '0');
+        const s = String(diff % 60).padStart(2, '0');
+        timerElement.innerText = `${m}:${s}`;
+    }
+
+    function showMsg(text) {
+        msgElement.innerText = text;
+        setTimeout(() => { if(msgElement.innerText === text) msgElement.innerText = ""; }, 2000);
+    }
+
+    function resetGame() {
+        initBoard(); score = 0; scoreElement.innerText = "0";
+        gameOver = false; paused = false;
+        gameStartTime = Date.now();
+        if(timerId) clearInterval(timerId);
+        timerId = setInterval(updateTimer, 1000);
+        p = new Piece(getRandomNote());
+        nextP = getRandomNote();
+        drawNext(); drawBoard();
+    }
+
+    function drop() {
+        let now = Date.now();
+        if(now - dropStart > dropInterval && !paused && !gameOver) { p.moveDown(); dropStart = now; }
+        requestAnimationFrame(drop);
+    }
+
+    // 터치 이벤트 연결
+    document.getElementById('leftBtn').addEventListener('touchstart', (e) => { e.preventDefault(); p.moveLeft(); });
+    document.getElementById('rightBtn').addEventListener('touchstart', (e) => { e.preventDefault(); p.moveRight(); });
+    document.getElementById('downBtn').addEventListener('touchstart', (e) => { e.preventDefault(); p.moveDown(); });
+    document.getElementById('hardDropBtn').addEventListener('touchstart', (e) => { 
+        e.preventDefault(); 
+        while(!p.collision(0,1)) { p.y++; }
+        p.lock();
+    });
+
+    // 키보드 지원 (노트북용 유지)
+    document.addEventListener("keydown", e => {
+        if(!paused && !gameOver) {
+            if(e.keyCode === 37) p.moveLeft();
+            if(e.keyCode === 39) p.moveRight();
+            if(e.keyCode === 40) p.moveDown();
+        }
+    });
+
+    resetGame(); drop();
+</script>
+</body>
+</html>
