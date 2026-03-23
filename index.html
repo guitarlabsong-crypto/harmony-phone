@@ -3,77 +3,85 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Song Young-Min Guitar Lab - Audio Harmony</title>
+    <title>Song Young-Min Guitar Lab - Ultimate</title>
     <style>
-        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; touch-action: none; }
         body { 
             background-color: #121212; margin: 0; color: #eee; 
             font-family: 'Malgun Gothic', sans-serif; overflow: hidden; 
             display: flex; flex-direction: column; height: 100vh; 
         }
 
+        /* 시작 로고 화면 */
+        #splash {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: #1a1a1a; display: flex; flex-direction: column;
+            justify-content: center; align-items: center; z-index: 100;
+            transition: opacity 0.8s ease;
+        }
+        #splash h1 { color: #ffca28; font-size: 28px; margin-bottom: 10px; text-align: center; }
+        #splash p { color: #bcaaa4; font-size: 16px; letter-spacing: 2px; }
+
+        /* 상단 바 */
         #top-bar {
             background: #231914; display: flex; justify-content: space-between;
             align-items: center; padding: 10px 15px; height: 80px;
-            border-bottom: 3px solid #5d4037; z-index: 20;
+            border-bottom: 3px solid #5d4037;
         }
         .status-item { text-align: center; flex: 1; }
         .label { font-size: 10px; color: #bcaaa4; display: block; }
         .value { font-size: 18px; color: #ffca28; font-weight: bold; }
         #nextCanvas { background: rgba(0,0,0,0.5); border-radius: 4px; }
 
-        .admin-btns { display: flex; flex-direction: column; gap: 4px; }
-        .btn-sm { 
-            background: #4e342e; color: #fff; border: 1px solid #8d6e63;
-            border-radius: 4px; padding: 5px 12px; font-size: 11px; font-weight: bold;
-        }
-
         #game-container { 
             flex: 1; position: relative; display: flex; 
             justify-content: center; align-items: center; background: #1a1a1a;
         }
         canvas#tetris { 
-            background: linear-gradient(rgba(0,0,0,0.85), rgba(0,0,0,0.85)), 
-                        url('https://images.unsplash.com/photo-1550985616-10810253b84d?q=80&w=400&auto=format&fit=crop');
-            background-size: cover; border: 4px solid #5d4037;
+            background: #000; border: 4px solid #5d4037;
             max-width: 95%; max-height: 98%; 
         }
         
         #watermark {
             position: absolute; top: 50%; left: 50%;
             transform: translate(-50%, -50%) rotate(-25deg);
-            font-size: 24px; color: rgba(255,255,255,0.06);
-            font-weight: 900; text-align: center; pointer-events: none; z-index: 1;
+            font-size: 22px; color: rgba(255,255,255,0.05);
+            font-weight: 900; text-align: center; pointer-events: none;
         }
 
         #chord-notify {
             position: absolute; top: 30%; width: 100%; text-align: center;
             font-size: 34px; font-weight: 900; color: #00e676;
-            text-shadow: 0 0 15px #000, 2px 2px 0 #000;
-            z-index: 50; pointer-events: none; display: none;
+            text-shadow: 0 0 15px #000; z-index: 50; pointer-events: none; display: none;
         }
 
-        #msg-box {
-            position: absolute; top: 40%; width: 100%; text-align: center;
-            font-size: 22px; font-weight: bold; color: #ffca28;
-            text-shadow: 2px 2px 4px #000; z-index: 40; pointer-events: none;
-        }
-
+        /* 컨트롤러 레이아웃 최적화 */
         #controls {
             background: #231914; display: grid; 
-            grid-template-columns: 1fr 1.2fr 1fr 0.8fr; 
-            gap: 10px; padding: 15px; height: 130px; border-top: 3px solid #5d4037;
+            grid-template-columns: 1fr 1fr 1fr 0.6fr; /* 마지막 드랍칸을 더 좁게 */
+            gap: 8px; padding: 12px; height: 130px; border-top: 3px solid #5d4037;
         }
         .btn-ctrl {
             background: #6d4c41; color: #fff; border: none; border-radius: 12px;
-            font-size: 34px; display: flex; justify-content: center; align-items: center;
+            font-size: 38px; display: flex; justify-content: center; align-items: center;
             box-shadow: 0 5px #3e2723;
         }
         .btn-ctrl:active { transform: translateY(3px); box-shadow: 0 2px #3e2723; background: #8d6e63; }
-        .btn-drop { background: #bf360c; font-size: 16px; font-weight: 900; border-radius: 12px; }
+        
+        /* 초소형 드랍 버튼 */
+        .btn-drop { 
+            background: #bf360c; font-size: 12px; font-weight: 900; 
+            height: 60%; align-self: center; border-radius: 8px;
+            box-shadow: 0 3px #5f1b06;
+        }
     </style>
 </head>
 <body>
+
+<div id="splash">
+    <h1>SONG, YOUNG-MIN<br>Guitar Lab</h1>
+    <p>Loading Harmony...</p>
+</div>
 
 <div id="top-bar">
     <div class="status-item">
@@ -88,9 +96,9 @@
         <span class="label">TIME</span>
         <span id="timer" class="value">00:00</span>
     </div>
-    <div class="admin-btns">
-        <button class="btn-sm" id="pauseBtn">P/R</button>
-        <button class="btn-sm" id="resetBtn">RESET</button>
+    <div class="admin-btns" style="display:flex; flex-direction:column; gap:4px;">
+        <button id="pauseBtn" style="padding:4px; font-size:10px; background:#4e342e; color:#fff; border:1px solid #8d6e63;">P/R</button>
+        <button id="resetBtn" style="padding:4px; font-size:10px; background:#4e342e; color:#fff; border:1px solid #8d6e63;">RESET</button>
     </div>
 </div>
 
@@ -98,7 +106,7 @@
     <div id="watermark">SONG, YOUNG-MIN<br>Guitar Lab</div>
     <div id="chord-notify">C Major!</div>
     <canvas id="tetris"></canvas>
-    <div id="msg-box"></div>
+    <div id="msg-box" style="position:absolute; top:45%; color:#ffca28; font-weight:bold; z-index:40;"></div>
 </div>
 
 <div id="controls">
@@ -115,7 +123,6 @@
     const nCtx = nCanvas.getContext('2d');
     const scoreEl = document.getElementById('score');
     const timeEl = document.getElementById('timer');
-    const msgBox = document.getElementById('msg-box');
     const chordNotify = document.getElementById('chord-notify');
 
     const ROWS = 18, COLS = 10;
@@ -123,13 +130,13 @@
 
     const NOTES = ['C', 'D', 'E', 'F', 'G', 'A', 'B'];
     const CHORDS = [
-        {k:'CEG', n:'C Major', f:[261.63, 329.63, 392.00]}, // C-E-G
-        {k:'ADF', n:'D minor', f:[293.66, 349.23, 440.00]}, // D-F-A
-        {k:'BEG', n:'E minor', f:[329.63, 392.00, 493.88]}, // E-G-B
-        {k:'ACF', n:'F Major', f:[349.23, 440.00, 523.25]}, // F-A-C
-        {k:'BDG', n:'G Major', f:[392.00, 493.88, 587.33]}, // G-B-D
-        {k:'ACE', n:'A minor', f:[440.00, 523.25, 659.25]}, // A-C-E
-        {k:'BDF', n:'B dim',   f:[493.88, 587.33, 698.46]}  // B-D-F
+        {k:'CEG', n:'C Major', f:[261.63, 329.63, 392.00]},
+        {k:'ADF', n:'D minor', f:[293.66, 349.23, 440.00]},
+        {k:'BEG', n:'E minor', f:[329.63, 392.00, 493.88]},
+        {k:'ACF', n:'F Major', f:[349.23, 440.00, 523.25]},
+        {k:'BDG', n:'G Major', f:[392.00, 493.88, 587.33]},
+        {k:'ACE', n:'A minor', f:[440.00, 523.25, 659.25]},
+        {k:'BDF', n:'B dim', f:[493.88, 587.33, 698.46]}
     ];
 
     let board = [], score = 0, paused = false, gameOver = false;
@@ -137,50 +144,40 @@
 
     const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
-    // 1. 나무 소리
     function playWoodSound() {
         if(audioCtx.state === 'suspended') audioCtx.resume();
         const osc = audioCtx.createOscillator();
         const gain = audioCtx.createGain();
         osc.frequency.setValueAtTime(150, audioCtx.currentTime);
-        osc.frequency.exponentialRampToValueAtTime(40, audioCtx.currentTime + 0.1);
-        gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+        gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
         gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
         osc.connect(gain); gain.connect(audioCtx.destination);
         osc.start(); osc.stop(audioCtx.currentTime + 0.1);
     }
 
-    // 2. 기타 화음 합성기 (교육용)
-    function playGuitarChord(frequencies) {
+    function playGuitarChord(freqs) {
         if(audioCtx.state === 'suspended') audioCtx.resume();
-        frequencies.forEach((freq, i) => {
+        freqs.forEach((f, i) => {
             const osc = audioCtx.createOscillator();
             const gain = audioCtx.createGain();
-            osc.type = 'triangle'; // 기타 줄의 느낌을 위해 삼각형파 사용
-            osc.frequency.setValueAtTime(freq, audioCtx.currentTime + (i * 0.05)); // 스트로크 효과
-            gain.gain.setValueAtTime(0.2, audioCtx.currentTime + (i * 0.05));
-            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.8 + (i * 0.1));
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(f, audioCtx.currentTime + (i * 0.05));
+            gain.gain.setValueAtTime(0.15, audioCtx.currentTime + (i * 0.05));
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.8);
             osc.connect(gain); gain.connect(audioCtx.destination);
-            osc.start(audioCtx.currentTime + (i * 0.05));
-            osc.stop(audioCtx.currentTime + 1.0 + (i * 0.1));
+            osc.start(audioCtx.currentTime + (i * 0.05)); osc.stop(audioCtx.currentTime + 1.0);
         });
     }
 
     function resize() {
-        const h = document.getElementById('game-container').clientHeight;
-        const w = document.getElementById('game-container').clientWidth;
-        SQ = Math.min(w / (COLS + 1), h / (ROWS + 1));
+        const container = document.getElementById('game-container');
+        SQ = Math.min(container.clientWidth / (COLS+1), container.clientHeight / (ROWS+1));
         canvas.width = COLS * SQ; canvas.height = ROWS * SQ;
         drawBoard();
     }
-    window.addEventListener('resize', resize);
 
     function initBoard() {
-        board = [];
-        for(let r=0; r<ROWS; r++) {
-            board[r] = [];
-            for(let c=0; c<COLS; c++) board[r][c] = {L:null, f:false, h:false, s:1};
-        }
+        board = Array.from({length: ROWS}, () => Array.from({length: COLS}, () => ({L:null, f:false, h:false, s:1})));
     }
 
     function drawSq(x, y, L, f=false, h=false, scale=1) {
@@ -188,12 +185,10 @@
         ctx.translate(x*SQ + SQ/2, y*SQ + SQ/2);
         ctx.scale(scale, scale);
         ctx.fillStyle = h ? "#ffd600" : (L ? (f ? "#2e7d32" : (L==='#'||L==='b' ? "#ffb300" : "#4e342e")) : "rgba(255,255,255,0.05)");
-        ctx.fillRect(-SQ/2, -SQ/2, SQ, SQ);
-        ctx.strokeStyle = h ? "#fff" : "rgba(255,255,255,0.1)";
-        ctx.strokeRect(-SQ/2, -SQ/2, SQ, SQ);
+        ctx.fillRect(-SQ/2 + 1, -SQ/2 + 1, SQ - 2, SQ - 2);
         if(L) {
             ctx.fillStyle = (L==='#'||L==='b') ? "#000" : "#fff";
-            ctx.font = `bold ${SQ*0.6}px Arial`; ctx.textAlign = "center"; ctx.fillText(L, 0, SQ*0.2);
+            ctx.font = `bold ${SQ*0.6}px Arial`; ctx.textAlign = "center"; ctx.fillText(L, 0, SQ*0.22);
         }
         ctx.restore();
     }
@@ -201,25 +196,13 @@
     function drawBoard() {
         ctx.clearRect(0,0,canvas.width,canvas.height);
         for(let r=0; r<ROWS; r++) for(let c=0; c<COLS; c++) drawSq(c, r, board[r][c].L, board[r][c].f, board[r][c].h, board[r][c].s);
-    }
-
-    function drawNext() {
-        nCtx.clearRect(0,0,40,40);
-        nCtx.fillStyle = (nextNote==='#'||nextNote==='b') ? "#ffb300" : "#ef6c00";
-        nCtx.fillRect(5,5,30,30);
-        nCtx.fillStyle = "#fff"; nCtx.font = "bold 16px Arial"; nCtx.textAlign = "center"; nCtx.fillText(nextNote, 20, 26);
-    }
-
-    function getRand(allowSpecial = true) {
-        const r = Math.random();
-        if(allowSpecial) { if(r < 0.08) return '#'; if(r < 0.16) return 'b'; }
-        return NOTES[Math.floor(Math.random()*7)];
+        if(p && !gameOver) drawSq(p.x, p.y, p.L, false, false, 1);
     }
 
     class Piece {
-        constructor(L) { this.L = L; this.x = 4; this.y = -1; }
+        constructor(L) { this.L = L; this.x = 4; this.y = 0; }
         moveDown() {
-            if(!this.collision(0,1)) { this.y++; drawBoard(); drawSq(this.x, this.y, this.L, false, false, 1.1); }
+            if(!this.collision(0,1)) { this.y++; drawBoard(); }
             else { playWoodSound(); this.lock(); }
         }
         collision(dx, dy) {
@@ -229,24 +212,22 @@
             return false;
         }
         lock() {
-            if(this.y < 0) { gameOver=true; showMsg("GAME OVER"); return; }
+            if(this.y <= 0) { gameOver = true; alert("Game Over!"); return; }
             board[this.y][this.x] = {L: this.L, f: false, h: false, s: 1};
-            if(this.L==='#') { 
-                // '#' 블럭 파괴 로직은 check()에서 3개 완성 시 수행되도록 함
-            }
-            if(this.L==='b') {
+            if(this.L === 'b') {
                 for(let r=this.y-1; r<=this.y+1; r++) for(let c=this.x-1; c<=this.x+1; c++)
-                    if(r>=0 && r<ROWS && c>=0 && c<COLS) board[r][c]={L:null, f:false, h:false, s:1};
-                showMsg("FLAT! EXPLOSION");
+                    if(r>=0 && r<ROWS && c>=0 && c<COLS) board[r][c] = {L:null, f:false, h:false, s:1};
             }
-            check(); p = new Piece(nextNote); nextNote = getRand(); drawNext();
+            check();
+            p = new Piece(nextNote); nextNote = NOTES[Math.floor(Math.random()*7)];
+            if(Math.random() < 0.15) nextNote = Math.random() < 0.5 ? '#' : 'b';
+            drawNext();
         }
     }
 
     async function check() {
-        let found = []; let chordNames = new Set(); let lastChordFreq = null;
+        let found = []; let chordName = ""; let chordFreq = null;
         const dirs = [[0,1],[1,0],[1,1],[1,-1]];
-        
         for(let r=0; r<ROWS; r++) {
             for(let c=0; c<COLS; c++) {
                 if(!board[r][c].L || board[r][c].L==='b') continue;
@@ -257,20 +238,14 @@
                         if(nr>=0 && nr<ROWS && nc>=0 && nc<COLS && board[nr][nc].L) s.push({r:nr, c:nc, L:board[nr][nc].L});
                     }
                     if(s.length===3) {
-                        let isSharpMatch = s.every(v => v.L === '#');
+                        let isSharp = s.every(v => v.L === '#');
                         let txt = s.map(v=>v.L).sort().join('');
                         let match = CHORDS.find(ch=>ch.k === txt);
-                        
-                        if(isSharpMatch || match || (s[0].L===s[1].L && s[1].L===s[2].L)) {
+                        if(isSharp || match || (s[0].L===s[1].L && s[1].L===s[2].L)) {
                             s.forEach(v=>found.push(v));
-                            if(isSharpMatch) {
-                                chordNames.add("SHARP COMBO!");
-                            } else if(match) {
-                                chordNames.add(match.n);
-                                lastChordFreq = match.f;
-                            } else {
-                                chordNames.add("3-Same!");
-                            }
+                            if(isSharp) chordName = "SHARP COMBO!";
+                            else if(match) { chordName = match.n; chordFreq = match.f; }
+                            else chordName = "3-MATCH!";
                         }
                     }
                 });
@@ -279,32 +254,18 @@
 
         if(found.length>0) {
             paused = true;
-            chordNotify.innerText = Array.from(chordNames).join(", ");
-            chordNotify.style.display = "block";
-            
-            if(lastChordFreq) playGuitarChord(lastChordFreq); // 화음 재생
-
-            // '#' 블럭 3개 완성 시 랜덤 블럭 4개 생성 로직 처리
-            if(Array.from(chordNames).includes("SHARP COMBO!")) {
-                let count=0; while(count<4){ 
+            chordNotify.innerText = chordName; chordNotify.style.display = "block";
+            if(chordFreq) playGuitarChord(chordFreq);
+            if(chordName === "SHARP COMBO!") {
+                for(let i=0; i<4; i++) {
                     let rr=Math.floor(Math.random()*ROWS), rc=Math.floor(Math.random()*COLS);
-                    if(!board[rr][rc].L){ board[rr][rc]={L:getRand(false), f:true, h:false, s:1}; count++; }
+                    if(!board[rr][rc].L) board[rr][rc]={L:NOTES[Math.floor(Math.random()*7)], f:true, h:false, s:1};
                 }
             }
-
-            const startTime = Date.now();
-            const animate = () => {
-                const elapsed = Date.now() - startTime;
-                if(elapsed < 1000) {
-                    found.forEach(v => { board[v.r][v.c].h = true; board[v.r][v.c].s = 1 + (elapsed/1000 * 1.5); });
-                    drawBoard(); requestAnimationFrame(animate);
-                } else {
-                    found.forEach(v => { board[v.r][v.c]={L:null, f:false, h:false, s:1}; });
-                    chordNotify.style.display = "none"; score += found.length * 10; scoreEl.innerText = score;
-                    gravity(); drawBoard(); paused = false;
-                }
-            };
-            animate();
+            setTimeout(() => {
+                found.forEach(v => { board[v.r][v.c] = {L:null, f:false, h:false, s:1}; });
+                chordNotify.style.display = "none"; gravity(); drawBoard(); paused = false;
+            }, 1200);
         }
     }
 
@@ -316,38 +277,48 @@
         }
     }
 
-    function showMsg(t) { msgBox.innerText = t; setTimeout(()=>msgBox.innerText="", 2000); }
+    function drawNext() {
+        nCtx.clearRect(0,0,36,36); nCtx.fillStyle = "#ffca28"; nCtx.font = "bold 16px Arial";
+        nCtx.textAlign = "center"; nCtx.fillText(nextNote, 18, 24);
+    }
 
-    function resetGame() {
-        initBoard(); score=0; scoreEl.innerText="0"; gameOver=false; paused=false;
-        gameStart = Date.now(); p = new Piece(getRand()); nextNote = getRand();
-        chordNotify.style.display = "none"; drawNext(); resize();
+    // 터치 지연 방지 최적화 함수
+    function handleMove(dir) {
+        if(paused || gameOver) return;
+        if(dir === 'L' && !p.collision(-1,0)) p.x--;
+        if(dir === 'R' && !p.collision(1,0)) p.x++;
+        if(dir === 'D') p.moveDown();
+        drawBoard(); // 즉시 갱신
+    }
+
+    function startGame() {
+        document.getElementById('splash').style.opacity = '0';
+        setTimeout(() => document.getElementById('splash').style.display = 'none', 800);
+        initBoard(); gameStart = Date.now();
+        p = new Piece(NOTES[Math.floor(Math.random()*7)]);
+        nextNote = NOTES[Math.floor(Math.random()*7)];
+        drawNext(); resize(); run();
     }
 
     function run() {
         if(!paused && !gameOver) {
             let now = Date.now();
-            if(now - dropStart > 850) { p.moveDown(); dropStart = now; }
+            if(now - dropStart > 900) { p.moveDown(); dropStart = now; }
             let diff = Math.floor((now - gameStart)/1000);
             timeEl.innerText = `${Math.floor(diff/60).toString().padStart(2,'0')}:${(diff%60).toString().padStart(2,'0')}`;
         }
         requestAnimationFrame(run);
     }
 
-    const btn = (id, fn) => {
-        document.getElementById(id).addEventListener('touchstart', (e) => { 
-            e.preventDefault(); if(!paused && !gameOver) fn(); 
-        });
-    };
-    btn('leftBtn', () => { if(!p.collision(-1,0)) p.x--; drawBoard(); p.draw(); });
-    btn('rightBtn', () => { if(!p.collision(1,0)) p.x++; drawBoard(); p.draw(); });
-    btn('downBtn', () => p.moveDown());
-    btn('dropBtn', () => { while(!p.collision(0,1)) p.y++; p.lock(); playWoodSound(); });
-    
-    document.getElementById('pauseBtn').addEventListener('click', () => { paused = !paused; showMsg(paused?"PAUSE":"RESUME"); });
-    document.getElementById('resetBtn').addEventListener('click', () => { if(confirm("리셋할까요?")) resetGame(); });
+    // 컨트롤 버튼 이벤트 (Passive: false로 터치 반응성 극대화)
+    document.getElementById('leftBtn').addEventListener('touchstart', (e) => { e.preventDefault(); handleMove('L'); }, {passive: false});
+    document.getElementById('rightBtn').addEventListener('touchstart', (e) => { e.preventDefault(); handleMove('R'); }, {passive: false});
+    document.getElementById('downBtn').addEventListener('touchstart', (e) => { e.preventDefault(); handleMove('D'); }, {passive: false});
+    document.getElementById('dropBtn').addEventListener('touchstart', (e) => { 
+        e.preventDefault(); while(!p.collision(0,1)) p.y++; p.lock(); drawBoard(); 
+    }, {passive: false});
 
-    resetGame(); run();
+    window.onload = () => setTimeout(startGame, 2500); // 2.5초 후 로고 사라짐
 </script>
 </body>
 </html>
