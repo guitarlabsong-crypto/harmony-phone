@@ -3,69 +3,139 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Song, Young-Min Guitar Lab - Special Edition</title>
+    <title>Song, Young-Min Guitar Lab - Final</title>
     <style>
-        body { background-color: #121212; margin: 0; color: #eee; font-family: sans-serif; overflow: hidden; display: flex; flex-direction: column; height: 100vh; touch-action: manipulation; }
-        
-        /* 헤더 스타일 */
-        #header-panel { display: flex; justify-content: space-between; align-items: center; background: #231914; padding: 8px 15px; border-bottom: 2px solid #5d4037; height: 65px; z-index: 10; }
-        .info-group { display: flex; gap: 12px; align-items: center; }
-        .info-box { text-align: center; }
-        .info-label { font-size: 10px; color: #bcaaa4; display: block; }
-        .info-value { font-size: 15px; color: #ffca28; font-weight: bold; }
-        .btn-admin { background: #4e342e; color: #fff; border: 1px solid #8d6e63; border-radius: 8px; padding: 6px 10px; font-size: 11px; font-weight: bold; }
-
-        /* 게임 영역 및 배경 설정 */
-        #game-area { flex: 1; position: relative; display: flex; justify-content: center; align-items: center; background: #1a1a1a; overflow: hidden; }
-        
-        canvas#tetris { 
-            /* 기타 배경 이미지 적용 */
-            background: linear-gradient(rgba(0,0,0,0.8), rgba(0,0,0,0.8)), url('https://images.unsplash.com/photo-1550985616-10810253b84d?q=80&w=400&auto=format&fit=crop'); 
-            background-size: cover;
-            background-position: center;
-            border: 3px solid #4e342e; 
-            max-height: 98%; 
-            max-width: 95%; 
-            display: block;
-            z-index: 2;
+        /* 기본 레이아웃 */
+        body { 
+            background-color: #121212; 
+            margin: 0; 
+            color: #eee; 
+            font-family: 'Malgun Gothic', sans-serif; 
+            overflow: hidden; 
+            display: flex; 
+            flex-direction: column; 
+            height: 100vh;
+            touch-action: manipulation;
         }
 
-        /* 워터마크 설정 (은은하게 회전된 글자) */
+        /* 상단 헤더 (정보 & 관리 버튼) */
+        #header-panel { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            background: #231914; 
+            padding: 5px 15px; 
+            border-bottom: 2px solid #5d4037; 
+            height: 70px; 
+            z-index: 10;
+        }
+        .info-group { display: flex; gap: 10px; align-items: center; }
+        .info-box { text-align: center; min-width: 50px; }
+        .info-label { font-size: 10px; color: #bcaaa4; display: block; margin-bottom: 2px; }
+        .info-value { font-size: 16px; color: #ffca28; font-weight: bold; }
+        
+        .admin-btns { display: flex; flex-direction: column; gap: 4px; }
+        .btn-admin { 
+            background: #4e342e; 
+            color: #fff; 
+            border: 1px solid #8d6e63; 
+            border-radius: 4px; 
+            padding: 4px 8px; 
+            font-size: 11px; 
+            font-weight: bold;
+        }
+
+        /* 게임 실행 영역 */
+        #game-area { 
+            flex: 1; 
+            position: relative; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            background: #1a1a1a; 
+            overflow: hidden; 
+        }
+
+        /* 기타 배경 & 캔버스 */
+        canvas#tetris { 
+            background: linear-gradient(rgba(0,0,0,0.75), rgba(0,0,0,0.75)), 
+                        url('https://images.unsplash.com/photo-1550985616-10810253b84d?q=80&w=400&auto=format&fit=crop');
+            background-size: cover;
+            background-position: center;
+            border: 4px solid #5d4037;
+            box-shadow: 0 0 20px rgba(0,0,0,0.5);
+            z-index: 5;
+        }
+
+        /* 워터마크 */
         #watermark { 
             position: absolute; 
             top: 50%; 
             left: 50%; 
             transform: translate(-50%, -50%) rotate(-25deg); 
-            font-size: 24px; 
-            color: rgba(255, 255, 255, 0.08); 
+            font-size: 26px; 
+            color: rgba(255, 255, 255, 0.07); 
             font-weight: 900; 
             white-space: nowrap; 
             pointer-events: none; 
             text-align: center; 
-            z-index: 3;
+            z-index: 6;
+            line-height: 1.2;
         }
 
-        /* 하단 컨트롤러 */
-        #controls { background: #231914; display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; padding: 15px; height: 130px; border-top: 2px solid #5d4037; z-index: 10; }
-        .btn-move { background: #6d4c41; color: white; border: none; border-radius: 15px; font-size: 28px; display: flex; justify-content: center; align-items: center; box-shadow: 0 4px #3e2723; -webkit-tap-highlight-color: transparent; }
-        .btn-move:active { transform: translateY(2px); box-shadow: 0 2px #3e2723; background: #8d6e63; }
-        .btn-drop { background: #bf360c; font-size: 18px; font-weight: bold; }
+        /* 메시지 오버레이 */
+        #msg-overlay { 
+            position: absolute; 
+            top: 40%; 
+            width: 100%; 
+            text-align: center; 
+            pointer-events: none; 
+            z-index: 20; 
+        }
+        #msg { font-size: 28px; font-weight: bold; color: #ffca28; text-shadow: 2px 2px 5px #000; }
 
-        #msg-overlay { position: absolute; top: 35%; width: 100%; text-align: center; pointer-events: none; z-index: 20; }
-        #msg { font-size: 26px; font-weight: bold; color: #ffca28; text-shadow: 2px 2px 5px #000; }
+        /* 하단 컨트롤러 (방향키) */
+        #controls { 
+            background: #231914; 
+            display: grid; 
+            grid-template-columns: repeat(4, 1fr); 
+            gap: 12px; 
+            padding: 15px 20px 25px 20px; 
+            height: 130px; 
+            border-top: 2px solid #5d4037; 
+            z-index: 10;
+        }
+        .btn-move { 
+            background: #6d4c41; 
+            color: white; 
+            border: none; 
+            border-radius: 15px; 
+            font-size: 30px; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            box-shadow: 0 5px #3e2723;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .btn-move:active { 
+            transform: translateY(3px); 
+            box-shadow: 0 2px #3e2723; 
+            background: #8d6e63; 
+        }
+        .btn-drop { background: #bf360c; font-size: 18px; font-weight: bold; }
     </style>
 </head>
 <body>
 
 <div id="header-panel">
     <div class="info-group">
-        <div class="info-box"><span class="info-label">NEXT</span><canvas id="nextCanvas" width="35" height="35"></canvas></div>
+        <div class="info-box"><span class="info-label">NEXT</span><canvas id="nextCanvas" width="40" height="40"></canvas></div>
         <div class="info-box"><span class="info-label">SCORE</span><span id="score" class="info-value">0</span></div>
         <div class="info-box"><span class="info-label">TIME</span><span id="timer" class="info-value">00:00</span></div>
     </div>
-    <div style="display:flex; gap:5px;">
+    <div class="admin-btns">
         <button class="btn-admin" onclick="paused = !paused; showMsg(paused?'PAUSED':'RESUME')">P/R</button>
-        <button class="btn-admin" onclick="confirm('Reset?') && resetGame()">RESET</button>
+        <button class="btn-admin" onclick="if(confirm('Reset?')) resetGame()">RESET</button>
     </div>
 </div>
 
@@ -101,15 +171,22 @@
         { keys: 'BDF', name: 'B dim' }
     ];
 
-    let board = [], score = 0, paused = false, gameOver = false, dropInterval = 600, dropStart = Date.now(), gameStartTime = null, timerId = null, p, nextP;
+    let board = [], score = 0, paused = false, gameOver = false, dropInterval = 700, dropStart = Date.now(), gameStartTime = null, timerId = null, p, nextP;
 
-    function resize() { SQ = Math.min(window.innerWidth/(COL+1.5), (window.innerHeight-250)/ROW); canvas.width = COL*SQ; canvas.height = ROW*SQ; drawBoard(); }
+    // 화면 크기에 맞게 조절
+    function resize() { 
+        SQ = Math.min(window.innerWidth/(COL+1.5), (window.innerHeight-280)/ROW); 
+        canvas.width = COL*SQ; canvas.height = ROW*SQ; 
+        drawBoard(); 
+    }
     window.addEventListener('resize', resize); resize();
 
-    function initBoard() { board = Array.from({length: ROW}, () => Array.from({length: COL}, () => ({letter: null, isFloating: false, highlight: false}))); }
+    function initBoard() { 
+        board = Array.from({length: ROW}, () => Array.from({length: COL}, () => ({letter: null, isFloating: false, highlight: false}))); 
+    }
 
     function drawSquare(x, y, cell) {
-        // 배경 투명도 조절하여 이미지 보이게 설정
+        if(x<0 || x>=COL || y<0 || y>=ROW) return;
         ctx.fillStyle = cell.highlight ? "#ffd600" : (cell.letter ? (cell.isFloating ? "#2e7d32" : (cell.letter==='#'||cell.letter==='b' ? "#ffb300" : "#4e342e")) : "rgba(255,255,255,0.05)");
         ctx.fillRect(x*SQ, y*SQ, SQ, SQ);
         ctx.strokeStyle = "rgba(255,255,255,0.1)"; 
@@ -124,9 +201,9 @@
     function drawBoard() { ctx.clearRect(0,0,canvas.width,canvas.height); for(let r=0; r<ROW; r++) for(let c=0; c<COL; c++) drawSquare(c,r,board[r][c]); }
 
     function drawNext() {
-        nCtx.clearRect(0,0,35,35); if(!nextP) return;
+        nCtx.clearRect(0,0,40,40); if(!nextP) return;
         nCtx.fillStyle = (nextP.letter==='#'||nextP.letter==='b') ? "#ffb300" : "#ef6c00";
-        nCtx.fillRect(5,5,25,25); nCtx.fillStyle="#fff"; nCtx.font="bold 14px Arial"; nCtx.textAlign="center"; nCtx.fillText(nextP.letter, 17, 23);
+        nCtx.fillRect(5,5,30,30); nCtx.fillStyle="#fff"; nCtx.font="bold 16px Arial"; nCtx.textAlign="center"; nCtx.fillText(nextP.letter, 20, 26);
     }
 
     function getRandomNote() { 
@@ -134,16 +211,18 @@
         return { letter: r < 0.08 ? '#' : (r < 0.16 ? 'b' : NOTES[Math.floor(Math.random()*7)]) }; 
     }
 
+    // [#] 기능: 랜덤 8개 생성
     function activateSharp() {
         showMsg("SHARP! +8 NOTES");
         let count = 0;
-        while(count < 8) {
+        for(let i=0; i<50; i++) { // 최대 50번 시도
             let r = Math.floor(Math.random()*ROW), c = Math.floor(Math.random()*COL);
             if(!board[r][c].letter) { board[r][c] = { letter: NOTES[Math.floor(Math.random()*7)], isFloating: true }; count++; }
-            if(board.flat().every(cell => cell.letter)) break;
+            if(count >= 8) break;
         }
     }
 
+    // [b] 기능: 3x3 폭탄
     function activateFlat(x, y) {
         showMsg("FLAT! EXPLOSION");
         for(let dr=-1; dr<=1; dr++) {
@@ -224,7 +303,17 @@
     }
 
     function showMsg(t) { msgElement.innerText = t; setTimeout(() => {if(msgElement.innerText===t) msgElement.innerText="";}, 2000); }
-    function resetGame() { initBoard(); score=0; scoreElement.innerText="0"; gameOver=false; paused=false; gameStartTime=Date.now(); if(timerId) clearInterval(timerId); timerId=setInterval(() => { let d=Math.floor((Date.now()-gameStartTime)/1000); timerElement.innerText=`${String(Math.floor(d/60)).padStart(2,'0')}:${String(d%60).padStart(2,'0')}`; }, 1000); p=new Piece(getRandomNote()); nextP=getRandomNote(); drawNext(); drawBoard(); }
+    
+    function resetGame() { 
+        initBoard(); score=0; scoreElement.innerText="0"; gameOver=false; paused=false; 
+        gameStartTime=Date.now(); if(timerId) clearInterval(timerId); 
+        timerId=setInterval(() => { 
+            let d=Math.floor((Date.now()-gameStartTime)/1000); 
+            timerElement.innerText=`${String(Math.floor(d/60)).padStart(2,'0')}:${String(d%60).padStart(2,'0')}`; 
+        }, 1000); 
+        p=new Piece(getRandomNote()); nextP=getRandomNote(); drawNext(); drawBoard(); 
+    }
+    
     function drop() { if(Date.now()-dropStart > dropInterval && !paused && !gameOver) { p.moveDown(); dropStart=Date.now(); } requestAnimationFrame(drop); }
 
     const t = (id, f) => document.getElementById(id).addEventListener('touchstart', (e) => { e.preventDefault(); if(!paused) f(); });
