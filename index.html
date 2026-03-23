@@ -3,9 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Song, Young-Min Guitar Lab - Mobile</title>
+    <title>Song, Young-Min Guitar Lab - Mobile Pro</title>
     <style>
-        /* 모바일 최적화 스타일 */
         body { 
             background-color: #121212; 
             margin: 0; 
@@ -15,22 +14,38 @@
             display: flex; 
             flex-direction: column; 
             height: 100vh;
-            touch-action: manipulation; /* 더블탭 확대 방지 */
+            touch-action: manipulation;
         }
         
-        /* 상단 정보 영역 */
+        /* 상단 정보 및 관리 버튼 영역 */
         #header-panel {
             display: flex;
-            justify-content: space-around;
+            justify-content: space-between;
             align-items: center;
             background: #231914;
-            padding: 10px;
+            padding: 8px 15px;
             border-bottom: 2px solid #5d4037;
+            height: 60px;
         }
 
+        .info-group { display: flex; gap: 15px; align-items: center; }
         .info-box { text-align: center; }
-        .info-label { font-size: 12px; color: #bcaaa4; display: block; }
-        .info-value { font-size: 18px; color: #ffca28; font-weight: bold; }
+        .info-label { font-size: 10px; color: #bcaaa4; display: block; }
+        .info-value { font-size: 16px; color: #ffca28; font-weight: bold; }
+
+        /* 상단으로 옮겨진 관리 버튼 */
+        .admin-btn-group { display: flex; gap: 8px; }
+        .btn-admin {
+            background: #4e342e;
+            color: #fff;
+            border: 1px solid #8d6e63;
+            border-radius: 8px;
+            padding: 8px 12px;
+            font-size: 12px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .btn-admin:active { background: #6d4c41; }
 
         /* 게임 메인 영역 */
         #game-area {
@@ -40,82 +55,86 @@
             justify-content: center;
             align-items: center;
             background: #1a1a1a;
-            overflow: hidden;
         }
 
         canvas#tetris {
-            max-height: 95%;
+            max-height: 98%;
             max-width: 95%;
-            border: 4px solid #4e342e;
-            box-shadow: 0 0 20px rgba(0,0,0,0.5);
+            border: 3px solid #4e342e;
+            background: #000;
         }
 
-        /* 하단 터치 컨트롤 패널 */
+        /* 하단 순수 조작 버튼 (크고 시원하게) */
         #controls {
             background: #231914;
-            padding: 15px;
             display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            grid-template-rows: repeat(2, 1fr);
-            gap: 10px;
-            height: 180px;
+            grid-template-columns: repeat(4, 1fr); /* 4칸 구성 */
+            gap: 12px;
+            padding: 20px;
+            height: 140px;
             border-top: 2px solid #5d4037;
         }
 
-        .btn {
+        .btn-move {
             background: #6d4c41;
             color: white;
             border: none;
-            border-radius: 12px;
-            font-size: 24px;
-            font-weight: bold;
+            border-radius: 15px;
+            font-size: 30px;
             display: flex;
             justify-content: center;
             align-items: center;
-            box-shadow: 0 4px #3e2723;
-            active-transform: translateY(2px);
+            box-shadow: 0 5px #3e2723;
             user-select: none;
             -webkit-tap-highlight-color: transparent;
         }
 
-        .btn:active {
-            background: #8d6e63;
-            transform: translateY(2px);
+        .btn-move:active {
+            transform: translateY(3px);
             box-shadow: 0 2px #3e2723;
+            background: #8d6e63;
         }
 
-        .btn-reset { background: #4e342e; font-size: 16px; }
-        .btn-drop { background: #bf360c; }
+        /* DROP 버튼 강조 */
+        .btn-drop {
+            background: #bf360c;
+            grid-column: span 1;
+            font-size: 20px;
+            font-weight: bold;
+        }
 
-        /* 메시지 오버레이 */
         #msg-overlay {
             position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
+            top: 40%;
+            width: 100%;
             text-align: center;
-            z-index: 100;
             pointer-events: none;
         }
-        #msg { font-size: 24px; font-weight: bold; color: #81c784; text-shadow: 2px 2px 4px #000; }
-        
-        #nextCanvas { background: rgba(0,0,0,0.3); border-radius: 5px; margin-top: 5px; }
+        #msg { font-size: 28px; font-weight: bold; color: #ffca28; text-shadow: 2px 2px 5px #000; }
+        #nextCanvas { background: #000; border-radius: 4px; }
     </style>
 </head>
 <body>
 
 <div id="header-panel">
-    <div class="info-box">
-        <span class="info-label">NEXT</span>
-        <canvas id="nextCanvas" width="50" height="50"></canvas>
+    <div class="info-group">
+        <div class="info-box">
+            <span class="info-label">NEXT</span>
+            <canvas id="nextCanvas" width="40" height="40"></canvas>
+        </div>
+        <div class="info-box">
+            <span class="info-label">SCORE</span>
+            <span id="score" class="info-value">0</span>
+        </div>
+        <div class="info-box">
+            <span class="info-label">TIME</span>
+            <span id="timer" class="info-value">00:00</span>
+        </div>
     </div>
-    <div class="info-box">
-        <span class="info-label">SCORE</span>
-        <span id="score" class="info-value">0</span>
-    </div>
-    <div class="info-box">
-        <span class="info-label">TIME</span>
-        <span id="timer" class="info-value">00:00</span>
+    
+    <div class="admin-btn-group">
+        <button class="btn-admin" onclick="paused = !paused; showMsg(paused?'PAUSED':'RESUME')">P/R</button>
+        <button class="btn-admin" onclick="confirm('리셋하시겠습니까?') && resetGame()">RESET</button>
     </div>
 </div>
 
@@ -125,12 +144,10 @@
 </div>
 
 <div id="controls">
-    <div class="btn" id="leftBtn">◀</div>
-    <div class="btn" id="downBtn">▼</div>
-    <div class="btn" id="rightBtn">▶</div>
-    <button class="btn btn-reset" onclick="resetGame()">RESET</button>
-    <div class="btn btn-drop" id="hardDropBtn">DROP</div>
-    <button class="btn btn-reset" onclick="paused = !paused; showMsg(paused?'PAUSE':'RESUME')">P/R</button>
+    <div class="btn-move" id="leftBtn">◀</div>
+    <div class="btn-move" id="downBtn">▼</div>
+    <div class="btn-move" id="rightBtn">▶</div>
+    <div class="btn-move btn-drop" id="hardDropBtn">DROP</div>
 </div>
 
 <script>
@@ -142,11 +159,16 @@
     const timerElement = document.getElementById('timer');
     const msgElement = document.getElementById('msg');
 
-    const ROW = 18, COL = 10; // 모바일 가로 비율을 위해 10칸으로 조정
-    const SQ = Math.min(window.innerWidth / (COL + 2), (window.innerHeight - 300) / ROW);
-    
-    canvas.width = COL * SQ;
-    canvas.height = ROW * SQ;
+    const ROW = 18, COL = 10;
+    let SQ = 30; // 초기값
+
+    function resizeCanvas() {
+        SQ = Math.min(window.innerWidth / (COL + 1.5), (window.innerHeight - 250) / ROW);
+        canvas.width = COL * SQ;
+        canvas.height = ROW * SQ;
+    }
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
 
     const VACANT = "rgba(255, 255, 255, 0.05)";
     const NOTES = ['C', 'D', 'E', 'F', 'G', 'A', 'B'];
@@ -164,7 +186,7 @@
     let score = 0;
     let paused = false;
     let gameOver = false;
-    let dropInterval = 500; 
+    let dropInterval = 600; 
     let dropStart = Date.now();
     let gameStartTime = null;
     let timerId = null;
@@ -174,35 +196,34 @@
         board = [];
         for(let r = 0; r < ROW; r++){
             board[r] = [];
-            for(let c = 0; c < COL; c++) board[r][c] = { letter: null, color: VACANT, highlight: false, isFloating: false, scale: 1 };
+            for(let c = 0; c < COL; c++) board[r][c] = { letter: null, color: VACANT };
         }
     }
 
     function drawNext() {
         nCtx.clearRect(0, 0, nextCanvas.width, nextCanvas.height);
         if(!nextP) return;
-        const letter = nextP.letter;
-        const color = (letter === '#' || letter === 'b') ? "#ffb300" : "#ef6c00";
-        nCtx.fillStyle = color;
-        nCtx.fillRect(10, 10, 30, 30);
-        nCtx.fillStyle = (letter === '#' || letter === 'b') ? "#000" : "#fff";
-        nCtx.font = "bold 18px Arial";
+        nCtx.fillStyle = (nextP.letter === '#' || nextP.letter === 'b') ? "#ffb300" : "#ef6c00";
+        nCtx.fillRect(5, 5, 30, 30);
+        nCtx.fillStyle = "#fff";
+        nCtx.font = "bold 16px Arial";
         nCtx.textAlign = "center";
-        nCtx.fillText(letter, 25, 31);
+        nCtx.fillText(nextP.letter, 20, 26);
     }
 
     function drawSquare(x, y, cell) {
-        const { letter, color, highlight, scale } = cell;
-        ctx.fillStyle = highlight ? "#ffd600" : color;
+        ctx.fillStyle = cell.highlight ? "#ffd600" : (cell.letter ? "#4e342e" : VACANT);
+        if(cell.letter === '#' || cell.letter === 'b') ctx.fillStyle = "#ffb300";
+        
         ctx.fillRect(x*SQ, y*SQ, SQ, SQ);
         ctx.strokeStyle = "rgba(255,255,255,0.1)";
         ctx.strokeRect(x*SQ, y*SQ, SQ, SQ);
-        if(letter) {
-            ctx.fillStyle = (letter === '#' || letter === 'b') ? "#000" : (highlight ? "#000" : "#fff");
-            const fontSize = (SQ * 0.6) * (scale || 1);
-            ctx.font = `bold ${fontSize}px Arial`;
+        
+        if(cell.letter) {
+            ctx.fillStyle = (cell.letter === '#' || cell.letter === 'b') ? "#000" : "#fff";
+            ctx.font = `bold ${SQ*0.6}px Arial`;
             ctx.textAlign = "center";
-            ctx.fillText(letter, x*SQ + SQ/2, y*SQ + SQ/2 + (fontSize/3));
+            ctx.fillText(cell.letter, x*SQ + SQ/2, y*SQ + SQ/2 + (SQ*0.2));
         }
     }
 
@@ -241,7 +262,7 @@
         }
         lock() {
             if(this.y < 0) { gameOver = true; showMsg("GAME OVER"); return; }
-            board[this.y][this.x] = { letter: this.letter, color: "#4e342e", highlight: false, isFloating: false, scale: 1 };
+            board[this.y][this.x] = { letter: this.letter, color: "#4e342e" };
             checkAndProcess();
             if(!gameOver) { p = new Piece(nextP); nextP = getRandomNote(); drawNext(); }
         }
@@ -249,9 +270,7 @@
 
     async function checkAndProcess() {
         let toRemove = new Set();
-        let currentScore = 0;
         const checkDirs = [{dx:1, dy:0}, {dx:0, dy:1}, {dx:1, dy:1}, {dx:-1, dy:1}];
-        
         for(let r=0; r<ROW; r++) {
             for(let c=0; c<COL; c++) {
                 if(!board[r][c].letter) continue;
@@ -263,66 +282,49 @@
                     }
                     if(seq.length === 3) {
                         let sorted = seq.map(s => s.L).sort().join('');
-                        let match = CHORD_DB.find(rule => rule.keys === sorted);
-                        if(match || (seq[0].L === seq[1].L && seq[1].L === seq[2].L)) {
+                        if(CHORD_DB.find(rule => rule.keys === sorted) || (seq[0].L === seq[1].L && seq[1].L === seq[2].L)) {
                             seq.forEach(s => { board[s.r][s.c].highlight = true; toRemove.add(`${s.r},${s.c}`); });
-                            currentScore += 100;
                         }
                     }
                 });
             }
         }
-
         if(toRemove.size > 0) {
-            paused = true;
-            score += currentScore;
-            scoreElement.innerText = score;
-            await new Promise(r => setTimeout(r, 500));
-            toRemove.forEach(pos => { let [pr, pc] = pos.split(',').map(Number); board[pr][pc] = { letter: null, color: VACANT }; });
-            applyGravity();
+            paused = true; score += toRemove.size * 10; scoreElement.innerText = score;
             drawBoard();
-            paused = false;
-            checkAndProcess();
-        }
-    }
-
-    function applyGravity() {
-        for(let c=0; c<COL; c++) {
-            for(let r=ROW-1; r>0; r--) {
-                if(board[r][c].letter === null) {
-                    for(let kr=r-1; kr>=0; kr--) {
-                        if(board[kr][c].letter !== null) {
-                            board[r][c] = board[kr][c];
-                            board[kr][c] = { letter: null, color: VACANT };
-                            break;
+            await new Promise(r => setTimeout(r, 400));
+            toRemove.forEach(pos => { let [pr, pc] = pos.split(',').map(Number); board[pr][pc] = { letter: null }; });
+            for(let c=0; c<COL; c++) {
+                for(let r=ROW-1; r>0; r--) {
+                    if(!board[r][c].letter) {
+                        for(let kr=r-1; kr>=0; kr--) {
+                            if(board[kr][c].letter) { board[r][c] = board[kr][c]; board[kr][c] = { letter: null }; break; }
                         }
                     }
                 }
             }
+            drawBoard(); paused = false; checkAndProcess();
         }
     }
 
     function updateTimer() {
         if(paused || gameOver) return;
         const diff = Math.floor((Date.now() - gameStartTime) / 1000);
-        const m = String(Math.floor(diff / 60)).padStart(2, '0');
-        const s = String(diff % 60).padStart(2, '0');
+        const m = String(Math.floor(diff/60)).padStart(2,'0'), s = String(diff%60).padStart(2,'0');
         timerElement.innerText = `${m}:${s}`;
     }
 
     function showMsg(text) {
         msgElement.innerText = text;
-        setTimeout(() => { if(msgElement.innerText === text) msgElement.innerText = ""; }, 2000);
+        setTimeout(() => { if(msgElement.innerText === text) msgElement.innerText = ""; }, 1500);
     }
 
     function resetGame() {
         initBoard(); score = 0; scoreElement.innerText = "0";
-        gameOver = false; paused = false;
-        gameStartTime = Date.now();
+        gameOver = false; paused = false; gameStartTime = Date.now();
         if(timerId) clearInterval(timerId);
         timerId = setInterval(updateTimer, 1000);
-        p = new Piece(getRandomNote());
-        nextP = getRandomNote();
+        p = new Piece(getRandomNote()); nextP = getRandomNote();
         drawNext(); drawBoard();
     }
 
@@ -332,24 +334,11 @@
         requestAnimationFrame(drop);
     }
 
-    // 터치 이벤트 연결
-    document.getElementById('leftBtn').addEventListener('touchstart', (e) => { e.preventDefault(); p.moveLeft(); });
-    document.getElementById('rightBtn').addEventListener('touchstart', (e) => { e.preventDefault(); p.moveRight(); });
-    document.getElementById('downBtn').addEventListener('touchstart', (e) => { e.preventDefault(); p.moveDown(); });
-    document.getElementById('hardDropBtn').addEventListener('touchstart', (e) => { 
-        e.preventDefault(); 
-        while(!p.collision(0,1)) { p.y++; }
-        p.lock();
-    });
-
-    // 키보드 지원 (노트북용 유지)
-    document.addEventListener("keydown", e => {
-        if(!paused && !gameOver) {
-            if(e.keyCode === 37) p.moveLeft();
-            if(e.keyCode === 39) p.moveRight();
-            if(e.keyCode === 40) p.moveDown();
-        }
-    });
+    const t = (id, fn) => document.getElementById(id).addEventListener('touchstart', (e) => { e.preventDefault(); if(!paused) fn(); });
+    t('leftBtn', () => p.moveLeft());
+    t('rightBtn', () => p.moveRight());
+    t('downBtn', () => p.moveDown());
+    t('hardDropBtn', () => { while(!p.collision(0,1)) p.y++; p.lock(); });
 
     resetGame(); drop();
 </script>
