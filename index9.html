@@ -3,44 +3,23 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Song Young-Min Guitar Lab - Precision Match</title>
+    <title>Song Young-Min Guitar Lab - Balance Patch</title>
     <style>
+        /* CSS는 이전과 동일하게 유지 (최적화 터치 액션 포함) */
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; touch-action: none; }
-        body { 
-            background-color: #121212; margin: 0; color: #eee; 
-            font-family: 'Malgun Gothic', sans-serif; overflow: hidden; 
-            display: flex; flex-direction: column; height: 100vh; 
-        }
-        #splash {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: #1a1a1a; display: flex; flex-direction: column;
-            justify-content: center; align-items: center; z-index: 100;
-            transition: opacity 0.8s ease;
-        }
+        body { background-color: #121212; margin: 0; color: #eee; font-family: 'Malgun Gothic', sans-serif; overflow: hidden; display: flex; flex-direction: column; height: 100vh; }
+        #splash { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #1a1a1a; display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 100; transition: opacity 0.8s ease; }
         #splash h1 { color: #ffca28; font-size: 28px; margin-bottom: 10px; text-align: center; line-height: 1.4; }
-        #top-bar {
-            background: #231914; display: flex; justify-content: space-between;
-            align-items: center; padding: 10px 15px; height: 80px; border-bottom: 3px solid #5d4037;
-        }
+        #top-bar { background: #231914; display: flex; justify-content: space-between; align-items: center; padding: 10px 15px; height: 80px; border-bottom: 3px solid #5d4037; }
         .status-item { text-align: center; flex: 1; }
         .label { font-size: 10px; color: #bcaaa4; display: block; }
         .value { font-size: 18px; color: #ffca28; font-weight: bold; }
         #nextCanvas { background: rgba(0,0,0,0.5); border-radius: 4px; }
         #game-container { flex: 1; position: relative; display: flex; justify-content: center; align-items: center; background: #1a1a1a; }
         canvas#tetris { background: #000; border: 4px solid #5d4037; max-width: 95%; max-height: 98%; }
-        #chord-notify {
-            position: absolute; top: 30%; width: 100%; text-align: center;
-            font-size: 34px; font-weight: 900; color: #00e676;
-            text-shadow: 0 0 15px #000; z-index: 50; pointer-events: none; display: none;
-        }
-        #controls {
-            background: #231914; display: grid; grid-template-columns: 1fr 1fr 1fr 0.6fr;
-            gap: 8px; padding: 12px; height: 130px; border-top: 3px solid #5d4037;
-        }
-        .btn-ctrl {
-            background: #6d4c41; color: #fff; border: none; border-radius: 12px;
-            font-size: 38px; display: flex; justify-content: center; align-items: center; box-shadow: 0 5px #3e2723;
-        }
+        #chord-notify { position: absolute; top: 30%; width: 100%; text-align: center; font-size: 34px; font-weight: 900; color: #00e676; text-shadow: 0 0 15px #000; z-index: 50; pointer-events: none; display: none; }
+        #controls { background: #231914; display: grid; grid-template-columns: 1fr 1fr 1fr 0.6fr; gap: 8px; padding: 12px; height: 130px; border-top: 3px solid #5d4037; }
+        .btn-ctrl { background: #6d4c41; color: #fff; border: none; border-radius: 12px; font-size: 38px; display: flex; justify-content: center; align-items: center; box-shadow: 0 5px #3e2723; }
         .btn-ctrl:active { transform: translateY(3px); box-shadow: 0 2px #3e2723; background: #8d6e63; }
         .btn-drop { background: #bf360c; font-size: 12px; font-weight: 900; height: 60%; align-self: center; border-radius: 8px; box-shadow: 0 3px #5f1b06; }
     </style>
@@ -49,7 +28,7 @@
 
 <div id="splash">
     <h1>SONG, YOUNG-MIN<br>Guitar Lab</h1>
-    <p style="color:#bcaaa4;">Academy Edition</p>
+    <p style="color:#bcaaa4;">10th Anniversary Edition</p>
 </div>
 
 <div id="top-bar">
@@ -103,7 +82,7 @@
         {k:'ACF', n:'F Major', f:[349, 440, 523]},
         {k:'BDG', n:'G Major', f:[392, 493, 587]},
         {k:'ACE', n:'A minor', f:[440, 523, 659]},
-        {k:'BDF', n:'Bm(b5)',   f:[493, 587, 698]}
+        {k:'BDF', n:'Bm(b5)', f:[493, 587, 698]}
     ];
 
     let board = [], score = 0, paused = false, gameOver = false;
@@ -182,6 +161,7 @@
             if(this.y <= 0) { gameOver = true; return; }
             board[this.y][this.x] = {L: this.L, f: false, h: false, s: 1};
             
+            // # 블럭: 하나만 쌓여도 랜덤 8개 생성
             if(this.L === '#') {
                 let cnt = 0;
                 while(cnt < 8) {
@@ -199,24 +179,23 @@
         }
     }
 
+    // 블럭 출현 확률 조정 (# 낮춤, b 높임)
     function getNote() {
         const r = Math.random();
-        if(r < 0.1) return '#';
-        if(r < 0.15) return 'b';
-        return NOTES[Math.floor(Math.random()*7)];
+        if(r < 0.05) return '#'; // 5% 확률
+        if(r < 0.15) return 'b'; // 10% 확률 (b가 #보다 2배 더 나옴)
+        return NOTES[Math.floor(Math.random()*7)]; // 나머지 85% 일반 노트
     }
 
     async function check() {
-        let matches = []; // 지워질 블럭들의 좌표 배열
+        let matches = [];
         let chordName = "";
         let chordFreq = null;
         const dirs = [[0,1],[1,0],[1,1],[1,-1]];
 
-        // 보드 전체를 돌며 3개 연속된 유효 패턴을 찾음
         for(let r=0; r<ROWS; r++) {
             for(let c=0; c<COLS; c++) {
                 if(!board[r][c].L || board[r][c].L==='b') continue;
-
                 dirs.forEach(d => {
                     let combo = [];
                     for(let i=0; i<3; i++) {
@@ -225,7 +204,6 @@
                             combo.push({r:nr, c:nc, L:board[nr][nc].L});
                         }
                     }
-
                     if(combo.length === 3) {
                         let isSharp = combo.every(v => v.L === '#');
                         let txt = combo.map(v=>v.L).sort().join('');
@@ -233,11 +211,8 @@
                         let isSame = (combo[0].L === combo[1].L && combo[1].L === combo[2].L);
 
                         if(isSharp || match || isSame) {
-                            // 패턴이 일치하면 해당 3개 좌표만 matches 배열에 추가 (중복 방지는 나중에 처리)
                             combo.forEach(pos => {
-                                if(!matches.some(m => m.r === pos.r && m.c === pos.c)) {
-                                    matches.push(pos);
-                                }
+                                if(!matches.some(m => m.r === pos.r && m.c === pos.c)) matches.push(pos);
                             });
                             if(isSharp) chordName = "SHARP CLEAN!";
                             else if(match) { chordName = match.n; chordFreq = match.f; }
@@ -258,26 +233,21 @@
             const ani = () => {
                 let dur = Date.now() - start;
                 if(dur < 800) {
-                    // 선택된 3개(혹은 겹친 경우 그 이상)의 블럭만 확대
-                    matches.forEach(v => {
-                        board[v.r][v.c].h = true;
-                        board[v.r][v.c].s = 1 + (dur/800 * 3.0);
-                    });
+                    matches.forEach(v => { board[v.r][v.c].h = true; board[v.r][v.c].s = 1 + (dur/800 * 3.0); });
                     drawBoard();
                     requestAnimationFrame(ani);
                 } else {
-                    // 정확히 matches에 포함된 블럭들만 제거
-                    matches.forEach(v => {
-                        board[v.r][v.c] = {L:null, f:false, h:false, s:1};
-                    });
+                    matches.forEach(v => { board[v.r][v.c] = {L:null, f:false, h:false, s:1}; });
+                    
+                    // 점수 계산 및 화면 업데이트 (수정됨)
                     score += matches.length * 10;
                     scoreEl.innerText = score;
+                    
                     chordNotify.style.display = "none";
                     gravity();
                     drawBoard();
                     paused = false;
-                    // 제거 후 연쇄 반응 체크
-                    check();
+                    check(); 
                 }
             };
             ani();
